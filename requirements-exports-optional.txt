@@ -1,0 +1,4 @@
+# Optional.
+# Use this if you want Python-based PDF/PS export without Inkscape.
+# On some Windows systems, CairoSVG may require extra system libraries.
+cairosvg>=2.7
