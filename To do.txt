@@ -1,0 +1,820 @@
+MVP Specification
+
+Project Name
+
+Cosmic OOP Arena
+
+Project Type
+
+Console-based C++ game.
+
+Do not use SDL, graphics, or external libraries in the MVP.
+The goal is to make a clean university-level C++ OOP project that demonstrates all major remaining syllabus concepts.
+
+
+---
+
+Core Game Idea
+
+Create a turn-based space battle game.
+
+The player controls a spaceship and fights different types of enemies:
+
+NormalEnemy
+FastEnemy
+TankEnemy
+BossEnemy
+
+The player can:
+
+1. Start Battle
+2. Visit Shop
+3. Show Player Stats
+4. Save Game
+5. Load Game
+6. Exit
+
+During battle, enemies attack differently using polymorphism.
+
+Example gameplay:
+
+A Fast Enemy appeared!
+
+Player attacks with Laser.
+FastEnemy uses Dash Attack!
+
+Player Health: 75
+Enemy Health: 20
+
+Enemy defeated!
+You earned 15 scrap.
+
+
+---
+
+Main Learning Goal
+
+The program must demonstrate these C++ concepts clearly:
+
+class and object
+constructors
+parameterized constructors
+destructors
+copy constructor
+object assignment
+friend function
+static data member
+array of objects
+pointer to object
+this pointer
+reference parameter
+dynamic allocation using new/delete
+operator overloading
+inheritance
+protected members
+multiple inheritance
+virtual functions
+pure virtual functions
+abstract class
+early binding
+late binding
+exception handling
+fstream file handling
+opening/closing files
+reading/writing text files
+
+
+---
+
+Required Folder Structure
+
+The AI coding agent should generate this structure:
+
+CosmicOOPArena/
+│
+├── main.cpp
+├── Game.h
+├── Game.cpp
+├── Vec2.h
+├── Vec2.cpp
+├── GameObject.h
+├── Player.h
+├── Player.cpp
+├── Enemy.h
+├── Enemy.cpp
+├── Weapon.h
+├── Weapon.cpp
+├── Shop.h
+├── Shop.cpp
+├── SaveSystem.h
+├── SaveSystem.cpp
+├── GameException.h
+├── README.md
+└── save.txt
+
+For a simpler MVP, the agent may combine files, but separate files are preferred because they naturally demonstrate the scope resolution operator ::.
+
+
+---
+
+Class Design
+
+1. Vec2 class
+
+Purpose: represent 2D position.
+
+Must demonstrate:
+
+constructor
+parameterized constructor
+copy constructor
+operator overloading
+friend function
+object assignment
+
+Required members:
+
+class Vec2 {
+private:
+    int x;
+    int y;
+
+public:
+    Vec2();
+    Vec2(int x, int y);
+    Vec2(const Vec2& other);
+
+    Vec2 operator+(const Vec2& other) const;
+    Vec2& operator=(const Vec2& other);
+
+    friend std::ostream& operator<<(std::ostream& out, const Vec2& v);
+};
+
+Example use:
+
+Vec2 p1(2, 3);
+Vec2 velocity(1, 0);
+Vec2 newPosition = p1 + velocity;
+
+This demonstrates operator overloading conceptually.
+
+
+---
+
+2. GameObject abstract class
+
+Purpose: common parent for player, enemies, and powerups.
+
+Must demonstrate:
+
+abstract class
+pure virtual function
+virtual destructor
+protected members
+
+Required design:
+
+class GameObject {
+protected:
+    Vec2 position;
+
+public:
+    GameObject();
+    GameObject(Vec2 pos);
+
+    virtual void update() = 0;
+    virtual void display() const = 0;
+
+    virtual ~GameObject();
+};
+
+Important: GameObject should not be directly instantiated.
+
+This should fail logically:
+
+GameObject obj; // not allowed because GameObject is abstract
+
+
+---
+
+3. Player class
+
+Purpose: store player spaceship data.
+
+Must demonstrate:
+
+class
+object
+constructor
+destructor
+this pointer
+reference parameter
+friend function
+static data member
+array of objects
+copy constructor
+
+Required fields:
+
+private:
+    std::string name;
+    int health;
+    int fuel;
+    int scrap;
+    Weapon inventory[3];
+
+Required static member:
+
+static int totalPlayersCreated;
+
+Required constructors:
+
+Player();
+Player(std::string name);
+Player(const Player& other);
+
+Required functions:
+
+void attack(Enemy& enemy);
+void takeDamage(int damage);
+void heal(int amount);
+void addScrap(int amount);
+void upgradeFuel(int amount);
+void display() const;
+
+Use this pointer:
+
+void Player::setHealth(int health) {
+    this->health = health;
+}
+
+Use friend function:
+
+friend void showSecretPlayerData(const Player& p);
+
+Example friend function output:
+
+[Debug Friend Access]
+Player health: 80
+Player fuel: 60
+Player scrap: 120
+
+
+---
+
+4. Weapon class
+
+Purpose: represent player weapons.
+
+Must demonstrate:
+
+constructor
+parameterized constructor
+copy constructor
+operator overloading
+friend function
+array of objects
+
+Required fields:
+
+private:
+    std::string name;
+    int damage;
+    int price;
+
+Required operators:
+
+bool operator==(const Weapon& other) const;
+Weapon operator+(const Weapon& other) const;
+friend std::ostream& operator<<(std::ostream& out, const Weapon& w);
+
+Conceptual meaning:
+
+Weapon laser("Laser", 20, 50);
+Weapon plasma("Plasma", 30, 80);
+
+Weapon combined = laser + plasma;
+
+Output:
+
+Combined weapon created: Laser-Plasma, Damage: 50
+
+
+---
+
+5. Enemy base class
+
+Purpose: parent class for all enemy types.
+
+Must demonstrate:
+
+inheritance
+protected members
+virtual function
+pure virtual function
+late binding
+base class pointer
+
+Required design:
+
+class Enemy : public GameObject {
+protected:
+    std::string type;
+    int health;
+    int damage;
+    int rewardScrap;
+
+public:
+    Enemy();
+    Enemy(std::string type, int health, int damage, int reward);
+
+    virtual void attack(Player& player) = 0;
+    virtual void display() const override;
+    bool isDead() const;
+    void takeDamage(int amount);
+    int getRewardScrap() const;
+
+    virtual ~Enemy();
+};
+
+
+---
+
+Enemy Child Classes
+
+6. NormalEnemy
+
+class NormalEnemy : public Enemy {
+public:
+    NormalEnemy();
+    void attack(Player& player) override;
+    void update() override;
+};
+
+Attack style:
+
+NormalEnemy fires a basic laser.
+
+
+---
+
+7. FastEnemy
+
+class FastEnemy : public Enemy {
+public:
+    FastEnemy();
+    void attack(Player& player) override;
+    void update() override;
+};
+
+Attack style:
+
+FastEnemy performs Dash Attack.
+
+
+---
+
+8. TankEnemy
+
+class TankEnemy : public Enemy {
+public:
+    TankEnemy();
+    void attack(Player& player) override;
+    void update() override;
+};
+
+Attack style:
+
+TankEnemy performs Heavy Cannon Attack.
+
+
+---
+
+9. RewardGiver class
+
+Purpose: demonstrate multiple inheritance.
+
+class RewardGiver {
+public:
+    virtual int bonusReward() const = 0;
+    virtual ~RewardGiver();
+};
+
+
+---
+
+10. BossEnemy
+
+Purpose: demonstrate multiple inheritance.
+
+class BossEnemy : public Enemy, public RewardGiver {
+private:
+    int specialPower;
+
+public:
+    BossEnemy();
+
+    void attack(Player& player) override;
+    void update() override;
+    int bonusReward() const override;
+};
+
+This demonstrates:
+
+class BossEnemy : public Enemy, public RewardGiver
+
+Meaning:
+
+> BossEnemy is an Enemy, and BossEnemy is also a RewardGiver.
+
+
+
+
+---
+
+Polymorphism Requirement
+
+The battle system must create enemies using base class pointers:
+
+Enemy* enemy = nullptr;
+
+Depending on random choice:
+
+enemy = new NormalEnemy();
+enemy = new FastEnemy();
+enemy = new TankEnemy();
+enemy = new BossEnemy();
+
+Then call:
+
+enemy->attack(player);
+
+This must demonstrate late binding.
+
+Even though the pointer type is:
+
+Enemy*
+
+the actual child class function should run:
+
+FastEnemy performs Dash Attack.
+TankEnemy performs Heavy Cannon Attack.
+BossEnemy uses Meteor Strike.
+
+After battle:
+
+delete enemy;
+
+This demonstrates dynamic allocation and destructor calls.
+
+
+---
+
+Battle Flow
+
+Create a Game class.
+
+Required menu:
+
+====== COSMIC OOP ARENA ======
+1. Start Battle
+2. Visit Shop
+3. Show Player Stats
+4. Save Game
+5. Load Game
+6. Demonstrate Copy Constructor
+7. Demonstrate Operator Overloading
+8. Demonstrate Friend Function
+9. Exit
+
+Start Battle Flow
+
+A random enemy appears.
+Player chooses attack.
+Enemy attacks back.
+Repeat until player or enemy dies.
+If enemy dies, player earns scrap.
+If player dies, game over.
+
+Minimum battle commands:
+
+1. Attack
+2. Heal
+3. Run
+
+
+---
+
+Shop System
+
+Create Shop class.
+
+Must demonstrate:
+
+reference parameter
+object modification
+array of objects
+
+Required design:
+
+class Shop {
+private:
+    Weapon availableWeapons[3];
+
+public:
+    Shop();
+    void showItems() const;
+    void buyWeapon(Player& player);
+    void upgradePlayerFuel(Player& player);
+};
+
+Player& player is important.
+
+The shop should modify the original player object, not a copy.
+
+
+---
+
+Save System
+
+Create SaveSystem class.
+
+Must demonstrate:
+
+fstream
+ofstream
+ifstream
+opening file
+closing file
+reading text file
+writing text file
+exception handling
+
+Required functions:
+
+class SaveSystem {
+public:
+    static void savePlayer(const Player& player);
+    static void loadPlayer(Player& player);
+};
+
+Use C++ file handling:
+
+std::ofstream fout("save.txt");
+std::ifstream fin("save.txt");
+
+Do not use:
+
+FILE*
+fopen()
+fprintf()
+fscanf()
+
+That is C-style. The university syllabus wants C++ stream/file classes.
+
+
+---
+
+Exception Handling
+
+Create custom exception:
+
+class GameException : public std::exception {
+private:
+    std::string message;
+
+public:
+    GameException(std::string msg);
+    const char* what() const noexcept override;
+};
+
+Use exceptions for:
+
+save file not found
+invalid save data
+not enough scrap
+invalid menu choice
+
+Example:
+
+if (!fin) {
+    throw GameException("Save file not found.");
+}
+
+Use try-catch in main.cpp or Game.cpp:
+
+try {
+    game.run();
+}
+catch (const GameException& e) {
+    std::cout << "Game Error: " << e.what() << std::endl;
+}
+
+
+---
+
+Function Overloading Requirement
+
+Add overloaded functions in Player.
+
+void heal();
+void heal(int amount);
+
+Meaning:
+
+player.heal();      // default heal
+player.heal(30);    // heal by 30
+
+This clearly demonstrates function overloading.
+
+
+---
+
+Inline Function Requirement
+
+Use one or two small inline functions.
+
+Example:
+
+inline int getHealth() const {
+    return health;
+}
+
+Use inline only for small getter functions.
+
+
+---
+
+Static Member Requirement
+
+Use static data members in Enemy and Player.
+
+Example:
+
+class Enemy {
+public:
+    static int totalEnemiesCreated;
+};
+
+Whenever an enemy object is created:
+
+Enemy::totalEnemiesCreated++;
+
+Display:
+
+Total enemies created in this session: 5
+
+This demonstrates that static data is shared by all objects.
+
+
+---
+
+Copy Constructor Demonstration
+
+Add menu option:
+
+6. Demonstrate Copy Constructor
+
+When selected:
+
+Player copiedPlayer = player;
+
+Output:
+
+Copy constructor called.
+Original Player: Aayush, Health: 90
+Copied Player: Aayush_Copy, Health: 90
+
+Also demonstrate Weapon copy constructor:
+
+Weapon copiedWeapon = originalWeapon;
+
+
+---
+
+Operator Overloading Demonstration
+
+Add menu option:
+
+7. Demonstrate Operator Overloading
+
+Show:
+
+Vec2 p1(2, 3);
+Vec2 p2(5, 1);
+Vec2 result = p1 + p2;
+
+Output:
+
+Position 1: (2, 3)
+Position 2: (5, 1)
+After operator+ : (7, 4)
+
+Also show:
+
+Weapon combined = laser + plasma;
+
+
+---
+
+Friend Function Demonstration
+
+Add menu option:
+
+8. Demonstrate Friend Function
+
+Call:
+
+showSecretPlayerData(player);
+
+Output:
+
+Friend function accessed private data:
+Health: 100
+Fuel: 80
+Scrap: 150
+
+Explain in comment:
+
+// Friend function can access private members of Player.
+
+
+---
+
+Early Binding and Late Binding Demonstration
+
+Add comments in code.
+
+Early binding example:
+
+player.display();
+
+Comment:
+
+// Early binding: compiler knows Player::display() at compile time.
+
+Late binding example:
+
+Enemy* enemy = new FastEnemy();
+enemy->attack(player);
+
+Comment:
+
+// Late binding: actual attack() is decided at runtime using virtual function.
+
+
+---
+
+Required README.md Content
+
+The AI coding agent must create a README.md with this table:
+
+C++ Concept	Where Used
+
+Class/Object	Player, Enemy, Weapon
+Constructor	Player(), Enemy(), Weapon()
+Destructor	Enemy destructor, GameObject destructor
+Copy Constructor	Player copy, Weapon copy
+Friend Function	showSecretPlayerData()
+Static Member	totalEnemiesCreated
+Array of Objects	Weapon inventory[3]
+Pointer to Object	Enemy* enemy
+this Pointer	Player::setHealth()
+Reference Parameter	Shop::buyWeapon(Player& player)
+Dynamic Allocation	new FastEnemy(), delete enemy
+Operator Overloading	Vec2 operator+, Weapon operator+
+Inheritance	FastEnemy : public Enemy
+Multiple Inheritance	BossEnemy : public Enemy, public RewardGiver
+Virtual Function	Enemy::attack()
+Pure Virtual Function	GameObject::update() = 0
+Abstract Class	GameObject
+Polymorphism	Enemy* calling child attack()
+Exception Handling	GameException
+File Handling	SaveSystem using fstream
+
+
+
+---
+
+Acceptance Criteria
+
+The final project must satisfy these conditions:
+
+1. Program compiles using g++.
+2. Program runs in terminal.
+3. No SDL or external graphics library.
+4. Uses at least one abstract class.
+5. Uses at least one pure virtual function.
+6. Uses at least three child enemy classes.
+7. Uses base class pointer for polymorphism.
+8. Uses new and delete for enemy objects.
+9. Uses constructor and destructor messages clearly.
+10. Uses copy constructor demonstration.
+11. Uses operator overloading demonstration.
+12. Uses friend function demonstration.
+13. Uses static data member demonstration.
+14. Uses fstream for saving/loading.
+15. Uses custom exception class.
+16. README explains concept mapping.
+
+
